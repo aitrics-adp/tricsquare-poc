@@ -1,0 +1,12 @@
+# 기본
+*                       @shbaek
+# 폴더별 담당
+/backend/               @aitrics-shbaek @backtrics-bot
+/web/                   @jyjeong_aitrics @frtrics-bot
+/app/                   @jyjeong-aitrics @frtrics-bot
+/tests/                 @aitrics-shbaek @qtrics-bot
+/docs/                  @aitrics-shbaek @gitrics-bot
+# 인프라는 PA Lead 단독
+/.github/               @shbaek
+/backend/template.yaml  @shbaek
+

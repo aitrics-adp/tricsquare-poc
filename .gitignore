@@ -216,3 +216,35 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# 환경변수 (Public 저장소: 절대 커밋 금지)
+.env
+.env.local
+.env.*
+*.pem
+*.key
+*.crt
+# 빌드
+dist/
+build/
+.next/
+node_modules/
+.venv/
+.pytest_cache/
+__pycache__/
+# IDE
+.vscode/
+.idea/
+.DS_Store
+# 로그
+*.log
+logs/
+# 민감 파일 (Public 저장소: 절대 커밋 금지)
+secrets/
+credentials.json
+*.credentials
+*-credentials.json
+# AWS SAM
+.aws-sam/
+samconfig.toml.local
