@@ -7,6 +7,7 @@ from mangum import Mangum
 
 from app import __version__
 from app.config import get_settings
+from app.routers import health
 
 settings = get_settings()
 
@@ -16,12 +17,9 @@ app = FastAPI(
     description="환자 PRO 수집 MVP API.",
 )
 
-
 # Register routers below. New routers are created by copying
-# ``app/routers/_template.py`` and registered here:
-#
-#     from app.routers import health
-#     app.include_router(health.router)
+# ``app/routers/_template.py`` and registered here.
+app.include_router(health.router)
 
 
 handler = Mangum(app, lifespan="off")
