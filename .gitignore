@@ -248,3 +248,6 @@ credentials.json
 # AWS SAM
 .aws-sam/
 samconfig.toml.local
+
+# Claude Code local artifacts
+.claude/
