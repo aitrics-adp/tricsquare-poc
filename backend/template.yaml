@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  TricSquare POC — FastAPI + Mangum on Lambda, fronted by API Gateway HTTP API.
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+Globals:
+  Function:
+    Runtime: python3.11
+    MemorySize: 128
+    Timeout: 30
+    Architectures: [arm64]
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        DOCTORS_TABLE: !Ref DoctorsTable
+        PATIENTS_TABLE: !Ref PatientsTable
+        DOCTOR_PATIENTS_TABLE: !Ref DoctorPatientsTable
+        PRO_SUBMISSIONS_TABLE: !Ref ProSubmissionsTable
+        LOG_LEVEL: !If [IsProd, "WARNING", "DEBUG"]
+
+Conditions:
+  IsProd: !Equals [!Ref Stage, prod]
+
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+      CorsConfiguration:
+        AllowOrigins: ["*"]
+        AllowMethods: [GET, POST, PUT, DELETE, OPTIONS]
+        AllowHeaders: [Content-Type, Authorization]
+        MaxAge: 3600
+
+  BackendFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${Stage}-tricsquare-backend"
+      Handler: app.main.handler
+      CodeUri: backend/
+      Events:
+        CatchAll:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+        HealthCheck:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /health
+            Method: GET
+      Policies:
+        - !Ref BackendDynamoDBPolicy
+      Tags:
+        project: tricsquare
+        stage: !Ref Stage
+
+  BackendDynamoDBPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DynamoDBCRUD
+            Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:Query
+            Resource:
+              - !GetAtt DoctorsTable.Arn
+              - !GetAtt PatientsTable.Arn
+              - !GetAtt DoctorPatientsTable.Arn
+              - !Sub "${DoctorPatientsTable.Arn}/index/*"
+              - !GetAtt ProSubmissionsTable.Arn
+              - !Sub "${ProSubmissionsTable.Arn}/index/*"
+
+  DoctorsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: tricsquare-doctors
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: doctor_id, AttributeType: S}
+      KeySchema:
+        - {AttributeName: doctor_id, KeyType: HASH}
+
+  PatientsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: tricsquare-patients
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: patient_id, AttributeType: S}
+      KeySchema:
+        - {AttributeName: patient_id, KeyType: HASH}
+
+  DoctorPatientsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: tricsquare-doctor-patients
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: doctor_id, AttributeType: S}
+        - {AttributeName: patient_id, AttributeType: S}
+      KeySchema:
+        - {AttributeName: doctor_id, KeyType: HASH}
+        - {AttributeName: patient_id, KeyType: RANGE}
+
+  ProSubmissionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: tricsquare-pro-submissions
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - {AttributeName: patient_id, AttributeType: S}
+        - {AttributeName: submitted_at, AttributeType: S}
+      KeySchema:
+        - {AttributeName: patient_id, KeyType: HASH}
+        - {AttributeName: submitted_at, KeyType: RANGE}
+
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+  FunctionArn:
+    Value: !GetAtt BackendFunction.Arn
+  DoctorsTableName:
+    Value: !Ref DoctorsTable
+  PatientsTableName:
+    Value: !Ref PatientsTable
+  DoctorPatientsTableName:
+    Value: !Ref DoctorPatientsTable
+  ProSubmissionsTableName:
+    Value: !Ref ProSubmissionsTable
