@@ -55,6 +55,32 @@ jobs:
       - name: Pytest (tests/backend/)
         run: uv run pytest --asyncio-mode=auto ../tests/backend/
 
+  notify:
+    needs: backend
+    if: always() && needs.backend.result != 'skipped' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack notify (success)
+        if: needs.backend.result == 'success'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_CI }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          curl -sS -X POST -H 'Content-Type: application/json' \
+            --data "{\"text\":\"✅ CI 통과 - PR #${PR_NUMBER} by ${PR_AUTHOR}\"}" \
+            "$SLACK_WEBHOOK_URL"
+      - name: Slack notify (failure)
+        if: needs.backend.result == 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_CI }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          curl -sS -X POST -H 'Content-Type: application/json' \
+            --data "{\"text\":\"❌ CI 실패 - PR #${PR_NUMBER} by ${PR_AUTHOR}\"}" \
+            "$SLACK_WEBHOOK_URL"
+
   aws-oidc-test:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
