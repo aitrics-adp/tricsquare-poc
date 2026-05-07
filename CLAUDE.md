@@ -28,3 +28,9 @@ AITRICS 트릭스퀘어 PRO 수집 MVP. 환자가 증상을 제출하고, 의사
 - 다른 폴더 파일을 호기심으로 읽지 마.
 - 프로젝트 전체를 스캔하려 하지 마. 필요한 파일만 봐.
 - 기존 패턴을 추론하려 하지 마. `_template.X`가 정답이야.
+
+## 📣 Slack 보고 규칙
+- **작업 커밋 완료 시**: `$SLACK_WEBHOOK_URL`로 `[에이전트명] ✅ TRCS-N 작업 설명 — commit 완료, push 대기` 전송
+- **블로커 발견 시**: `$SLACK_WEBHOOK_URL`로 `[에이전트명] 🛑 TRCS-N 블로커: 설명` 전송
+- 전송은 `curl` 명령으로, `username`은 `$AGENT_NAME` 사용
+- `#tricsquare-infra` (`$SLACK_WEBHOOK_INFRA`)는 **PA Lead 전용**, 에이전트 사용 금지
